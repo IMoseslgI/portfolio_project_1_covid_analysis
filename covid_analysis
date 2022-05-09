@@ -20,7 +20,7 @@ WHERE continent is NULL
 GROUP BY Location
 ORDER BY highest_deceased_count DESC LIMIT 1000 */
 
-#highest death count per location
+#highest death count per continent
 /* Select continent,MAX(cast(total_deaths as int)) as highest_deceased_count FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` 
 WHERE continent is not NULL
 GROUP BY continent
