@@ -1,0 +1,91 @@
+#Select Location, date, total_cases, new_cases, total_deaths, population FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` ORDER BY 1,2 LIMIT 50
+
+# Count of covid cases and tracks the total deaths and percentage of fatal contractions of the virus
+#Select Location, date, total_cases, total_deaths, (total_deaths/total_cases) * 100 as death_percent FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` 
+#ORDER BY 1,2 LIMIT 1000
+
+# Count of covid cases vs the total population of mexico
+/* Select Location, date, Population, total_cases,  (total_cases/population) * 100 as percent_contractions FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` 
+WHERE Location = 'Mexico'
+ORDER BY 1,2 LIMIT 1000 */
+
+#Highest contracting rate per location
+/* Select Location, population, MAX(total_cases) as highest_infect_count,  MAX((total_cases/population)) * 100 as percent_contractions FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` 
+GROUP BY Location, population
+ORDER BY percent_contractions DESC LIMIT 1000 */
+
+#highest death count per location
+/* Select Location,MAX(cast(total_deaths as int)) as highest_deceased_count FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` 
+WHERE continent is NULL
+GROUP BY Location
+ORDER BY highest_deceased_count DESC LIMIT 1000 */
+
+#highest death count per location
+/* Select continent,MAX(cast(total_deaths as int)) as highest_deceased_count FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` 
+WHERE continent is not NULL
+GROUP BY continent
+ORDER BY highest_deceased_count DESC LIMIT 1000 */
+
+
+#Global Statistics
+/* Select date, SUM(new_cases) as tot_cases, SUM(CAST(new_deaths as int)) as tot_deaths, (SUM(CAST(new_deaths as int))/SUM(new_cases)) * 100 as death_percent
+FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` 
+WHERE continent is not null
+GROUP BY date
+ORDER BY 1,2 LIMIT 1000 */
+
+# Display Join of two tables (using CTE) that showcases the number of vaccinations per country
+ /* WITH vaccinatedPopulation(continent, location, date, population, new_vaccinations ,aggregated_vaccine_num)
+AS
+(
+SELECT covdeaths.continent, covdeaths.location, covdeaths.date, covdeaths.population, covvaccination.new_vaccinations, SUM(CAST(covvaccination.new_vaccinations as bigint)) OVER (Partition by covdeaths.location ORDER BY covdeaths.location, covdeaths.date) as aggregated_vaccine_num,
+
+FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` as covdeaths
+JOIN `portfolio-project-1-349703.portfolio_project_1.covid_vaccinations` as covvaccination
+ON covdeaths.Location = covvaccination.Location AND 
+covdeaths.date = covvaccination.date
+WHERE covdeaths.continent is not null
+
+)
+
+SELECT *, (aggregated_vaccine_num/population) * 100
+FROM vaccinatedPopulation
+*/
+
+# Display Join of two tables (using temporary table) that showcases the number of vaccinations per country
+ DROP TABLE if exists #vaccpop 
+CREATE TABLE #vaccpop
+(
+continent nvarchar(255),
+location nvarchar (255), 
+date datetime,
+population numeric,
+new_vaccinations numeric,
+aggregated_vaccine_num numeric
+
+)
+
+INSERT INTO #vaccpop
+
+SELECT covdeaths.continent, covdeaths.location, covdeaths.date, covdeaths.population, covvaccination.new_vaccinations, SUM(CAST(covvaccination.new_vaccinations as bigint)) OVER (Partition by covdeaths.location ORDER BY covdeaths.location, covdeaths.date) as aggregated_vaccine_num
+FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` as covdeaths
+JOIN `portfolio-project-1-349703.portfolio_project_1.covid_vaccinations` as covvaccination
+ON covdeaths.location = covvaccination.location AND 
+covdeaths.date = covvaccination.date
+WHERE covdeaths.continent is not null
+
+
+
+SELECT *, (aggregated_vaccine_num/population) * 100
+FROM #vaccpop
+
+
+#View function for visualizing specific covid data
+
+CREATE VIEW vaccpop AS 
+SELECT covdeaths.continent, covdeaths.location, covdeaths.date, covdeaths.population, covvaccination.new_vaccinations, SUM(CAST(covvaccination.new_vaccinations as bigint)) OVER (Partition by covdeaths.location ORDER BY covdeaths.location, covdeaths.date) as aggregated_vaccine_num
+FROM `portfolio-project-1-349703.portfolio_project_1.covid_deaths` as covdeaths
+JOIN `portfolio-project-1-349703.portfolio_project_1.covid_vaccinations` as covvaccination
+ON covdeaths.location = covvaccination.location AND 
+covdeaths.date = covvaccination.date
+WHERE covdeaths.continent is not null
